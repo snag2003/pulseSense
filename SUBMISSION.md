@@ -15,7 +15,7 @@ These targets are based on the challenge list supplied by the team. Final eligib
 | MLH — Best Use of Gemini API | Structured appointment brief from approved readings, deterministic statistics and validated source IDs | Integration implemented; capture a successful real Gemini request |
 | MLH — Best Use of ElevenLabs | Narrate the reviewed brief, show transcript and change playback speed | Integration implemented; demonstrate real ElevenLabs audio rather than browser speech |
 | MLH — Best Use of Tiger Data | Measurement hypertable, daily continuous aggregate, actual SQL-backed trend table | Live Render → Tiger sync and continuous aggregate verified with synthetic readings |
-| MLH — GoDaddy domain challenge | pulsesenseai.us registration and project association | User reports registration using the offer; retain proof and verify Porkbun redemption eligibility with organizers; Render deployment live; custom domain awaits DNS verification |
+| MLH — GoDaddy domain challenge | pulsesenseai.us registration and project association | User reports registration using the offer; retain proof and verify Porkbun redemption eligibility with organizers; Live HTTPS deployment at pulsesenseai.us; retain offer redemption evidence |
 | Best Overall | Complete end-to-end task and clear explanation of impact | Automatically entered per supplied rules |
 | Best First-Time Hacker | At least 50% of the team submitting at a hackathon for the first time | Team must confirm this condition |
 
@@ -40,7 +40,7 @@ DigitalOcean is excluded at the team's request. Do not select unrelated sponsor 
 
 **What we learned:** A useful AI health-data experience needs more than a prompt. Selection, consent, source traceability, editable output and understandable failure states are part of the product.
 
-**Next steps:** Verify the Apple companion on a physical device, finish custom-domain DNS, test accessibility with users, add account recovery, and evaluate brief accuracy. Do not describe the app as clinically validated or compliant with a medical privacy standard without independent evidence.
+**Next steps:** Verify the Apple companion on a physical device, rehearse the hosted demo, test accessibility with users, add account recovery, and evaluate brief accuracy. Do not describe the app as clinically validated or compliant with a medical privacy standard without independent evidence.
 
 ## Before submitting
 

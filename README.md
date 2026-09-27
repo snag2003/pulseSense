@@ -8,9 +8,11 @@ Open **Wearables** to connect Oura or pair the included Apple Health iPhone comp
 
 ## Hosted demo
 
-Live demo: https://pulsesense-ai-szcc.onrender.com
+Live demo: https://pulsesenseai.us
 
-Custom domain: **pulsesenseai.us** is registered in Render and awaits Porkbun DNS verification. This free demo uses temporary storage: accounts, photos, sessions and local records can reset after a restart or idle spin-down.
+Backup address: https://pulsesense-ai-szcc.onrender.com
+
+Custom domain: **pulsesenseai.us** is verified and serves the app over HTTPS. The www address redirects to the root domain. This free demo uses temporary storage: accounts, photos, sessions and local records can reset after a restart or idle spin-down.
 
 Navigation: **Home**, **Check in**, **My health**, **Prepare for a visit**, **Settings**. Settings includes larger text, higher contrast and reduced motion.
 

@@ -6,11 +6,11 @@ The Dockerfile runs the React app, Node API and private Python worker together. 
 
 ## Current deployment
 
-Live: https://pulsesense-ai-szcc.onrender.com
+Live: https://pulsesenseai.us (HTTPS verified). Backup: https://pulsesense-ai-szcc.onrender.com
 
 Render service: `srv-dasbdio473hc73fi6p8g`, Docker, Free, Ohio. Automatic code deployments are off so a commit cannot unexpectedly reset demo records. Deploy manually after reviewing changes. Credentials are configured privately in Render.
 
-`pulsesenseai.us` and `www.pulsesenseai.us` are registered in Render and currently await DNS. In Porkbun, use an A record with a blank Host and answer `216.24.57.1`, plus a CNAME with Host `www` and answer `pulsesense-ai-szcc.onrender.com`. Keep unrelated records. Verify in Render after saving.
+`pulsesenseai.us` and `www.pulsesenseai.us` are connected to Render. HTTPS health checks pass on both, and www redirects to the root domain. In Porkbun, use an A record with a blank Host and answer `216.24.57.1`, plus a CNAME with Host `www` and answer `pulsesense-ai-szcc.onrender.com`. Keep unrelated records. Verify in Render after saving.
 
 Verified live with synthetic data: account creation, saved readings, Gemini guidance, ElevenLabs audio, Tiger sync/continuous aggregate/removal, OpenCV segmentation, and correct rejection of a no-face camera scan. Real-person camera accuracy and the hosted Oura authorization flow remain unverified.
 
@@ -43,7 +43,7 @@ The free plan has limited CPU and memory. Vision requests run one at a time and 
 1. Add `pulsesenseai.us` in the Render service's **Settings → Custom Domains**.
 2. In Porkbun, update only the website DNS records to the exact values Render shows. Keep unrelated email and verification records. Remove conflicting parking records only after reviewing them.
 3. Verify the domain in Render and wait for HTTPS to be ready.
-4. Register `https://pulsesenseai.us/api/wearables/oura/callback` in the Oura application. Keep the local callback if you still use it.
+4. The Oura application now has `https://pulsesenseai.us/api/wearables/oura/callback` registered alongside the local callback. Each user still needs to approve Oura access from their hosted PulseSense account.
 5. Open the custom domain, create a demo account and reconnect Oura. Local account files are not uploaded by this deployment.
 
 ## Recording checklist
