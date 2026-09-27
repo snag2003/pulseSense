@@ -1,0 +1,30 @@
+services:
+  app:
+    build: ..
+    env_file: ../.env.production
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3001
+      DATABASE_PATH: /app/data/pulsesense.sqlite
+    volumes:
+      - pulse_data:/app/data
+    restart: unless-stopped
+    expose:
+      - "3001"
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    depends_on:
+      - app
+volumes:
+  pulse_data:
+  caddy_data:
+  caddy_config:

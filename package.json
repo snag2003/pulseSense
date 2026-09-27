@@ -9,12 +9,16 @@
     "build": "tsc --noEmit && vite build",
     "start": "node server/index.mjs",
     "test": "node --test server/*.test.mjs",
-    "check:config": "node server/check-config.mjs"
+    "check:config": "node server/check-config.mjs",
+    "tiger:migrate": "node server/tiger-migrate.mjs",
+    "vision:setup": "node vision/install.mjs",
+    "vision:test": "vision/.venv/bin/python vision/test_engine.py"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
+    "pg": "^8.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.10.1"

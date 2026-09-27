@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: pulsesense-ai
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: DATABASE_PATH
+        value: /app/data/pulsesense.sqlite
+      - key: APP_ORIGIN
+        value: https://pulsesenseai.us
+      - key: DEMO_EPHEMERAL
+        value: 'true'
+      - key: VISION_MAX_WORKERS
+        value: '1'
+      - key: OURA_REDIRECT_URI
+        value: https://pulsesenseai.us/api/wearables/oura/callback
+      - key: TIGER_CA_FILE
+        value: /app/deploy/tiger-service-ca.pem
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        sync: false
+      - key: OURA_CLIENT_ID
+        sync: false
+      - key: OURA_CLIENT_SECRET
+        sync: false
+      - key: TIGER_DATABASE_URL
+        sync: false

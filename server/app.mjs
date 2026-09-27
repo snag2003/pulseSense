@@ -1,3 +1,8 @@
+import {createVision} from "./vision.mjs";
+import { createTiger } from "./tiger.mjs";
+import { createUsage } from "./usage.mjs";
+import { createBriefs } from "./briefs.mjs";
+import { createWearables } from "./wearables.mjs";
 import express from "express"
 import cookieParser from "cookie-parser"
 import { DatabaseSync } from "node:sqlite"
@@ -23,6 +28,8 @@ const text = (v, max, min = 0) => {
 export function createApp({
   databasePath = process.env.DATABASE_PATH || "./data/pulsesense.sqlite",
   providerFetch = fetch,
+  tigerPool,
+  visionWorker,
 } = {}) {
   mkdirSync(dirname(resolve(databasePath)), { recursive: true })
   const db = new DatabaseSync(databasePath)
@@ -38,7 +45,7 @@ export function createApp({
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "same-origin",
       "X-Frame-Options": "DENY",
-      "Permissions-Policy": "camera=(self), microphone=()",
+      "Permissions-Policy": "camera=(self), microphone=(self)",
     })
     if (req.path.startsWith("/api")) res.set("Cache-Control", "no-store")
     if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
@@ -47,7 +54,7 @@ export function createApp({
       const allowed = process.env.APP_ORIGIN || "http://localhost:5173"
       const origins =
         process.env.NODE_ENV === "production"
-          ? [allowed]
+          ? [allowed, process.env.RENDER_EXTERNAL_URL].filter(Boolean)
           : [
               allowed,
               "http://127.0.0.1:5173",
@@ -148,6 +155,8 @@ export function createApp({
     audit(user.id, "Signed in")
     return session(res, user)
   })
+  const wearables = createWearables({db,databasePath,providerFetch,audit,limit});
+  app.use("/api", wearables.publicRouter);
   app.use("/api", (req, res, next) => {
     const token = req.cookies.pulse_session
     const user =
@@ -162,9 +171,15 @@ export function createApp({
     req.user = user
     next()
   })
+  app.use("/api", wearables.privateRouter);
+  const usage = createUsage({db,providerFetch});
+  usage.register(app);
+  const tiger = createTiger({app,db,audit,tigerPool});
+  createBriefs({app,db,meteredFetch:usage.fetchMetered,audit});
   app.get("/api/me", (req, res) =>
     res.json({
       user: userView(req.user),
+      demoEphemeral: process.env.DEMO_EPHEMERAL === "true",
       services: {
         gemini: !!process.env.GEMINI_API_KEY,
         elevenlabs: !!process.env.ELEVENLABS_API_KEY,
@@ -212,6 +227,7 @@ export function createApp({
     audit(id, `${kind} record saved`)
     return r
   }
+  createVision({app,db,audit,save,meteredFetch:usage.fetchMetered,visionWorker});
   app.get("/api/records", (req, res) =>
     res.json({ records: records(req.user.id) }),
   )
@@ -249,7 +265,9 @@ export function createApp({
       )
     res.status(201).json({ record: save(req.user.id, kind, out) })
   })
-  app.delete("/api/records/:id", (req, res) => {
+  app.delete("/api/records/:id", async (req, res) => {
+    if (!db.prepare("SELECT id FROM records WHERE id=? AND user_id=?").get(req.params.id,req.user.id)) throw fail(404,"Record not found.");
+    await tiger.removeRecord(req.user.id,req.params.id);
     const r = db
       .prepare("DELETE FROM records WHERE id=? AND user_id=?")
       .run(req.params.id, req.user.id)
@@ -312,7 +330,7 @@ export function createApp({
       req.user.id,
       "Description" + (image ? " and image" : "") + " sent to Gemini",
     )
-    const response = await providerFetch(
+    const response = await usage.fetchMetered(req.user.id,
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       {
         method: "POST",
@@ -369,7 +387,7 @@ export function createApp({
       )
     limit(`voice:${req.user.id}`, 10, 60000)
     const message = text(req.body.text, 3000, 1)
-    const response = await providerFetch(
+    const response = await usage.fetchMetered(req.user.id,
       `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(process.env.ELEVENLABS_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb")}`,
       {
         method: "POST",
@@ -408,5 +426,5 @@ export function createApp({
               : err.message,
       })
   })
-  return { app, db }
+  return { app, db, close: tiger.close }
 }

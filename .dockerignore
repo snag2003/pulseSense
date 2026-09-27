@@ -1,0 +1,14 @@
+node_modules
+dist
+data
+.env
+.env.*
+.git
+work
+ios
+*.zip
+
+vision/.venv/
+vision/.cache/
+vision/__pycache__/
+vision/*.task

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+data/
+*.sqlite*
+.env.*
+!.env.example
+!production.env.example
+
+vision/.venv/
+vision/.cache/
+vision/__pycache__/
+vision/*.task

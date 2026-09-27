@@ -1,3 +1,7 @@
+import {groups, sections, initialSection, StartHere, ReadingPreferences, readPreferences, type Section} from "./Navigation";
+import {CameraCheckIn, PhotoTracking} from "./Vision";
+import {AppointmentBrief, AIControls, Analytics} from "./ChallengeFeatures";
+import Wearables from "./Wearables";
 import React, { useEffect, useRef, useState } from "react"
 import {
   AreaChart,
@@ -20,6 +24,11 @@ type Reading = {
   sbp?: number
   dbp?: number
   note?: string
+  measuredAt?: string
+  measurementDay?: string
+  measurement?: string
+  hrvMethod?: string
+  device?: string
   source?: string
   description?: string
   result?: string
@@ -31,15 +40,6 @@ type RecordItem = {
   payload: Reading
   created: string
 }
-type Section = "dashboard" | "vitals" | "symptom" | "voice" | "records" | "privacy"
-const nav: [Section, string, string][] = [
-  ["dashboard", "Dashboard", "▦"],
-  ["vitals", "Vitals journal", "♡"],
-  ["symptom", "Symptom AI", "✧"],
-  ["voice", "Voice guide", "◉"],
-  ["records", "Health records", "▤"],
-  ["privacy", "Privacy center", "◇"],
-]
 const fields = [
   { key: "hr", label: "Heart rate", unit: "bpm", min: 20, max: 250 },
   { key: "hrv", label: "Heart rate variability", unit: "ms", min: 0, max: 500 },
@@ -72,6 +72,8 @@ async function api(path: string, method = "GET", body?: unknown) {
   }
   return data
 }
+const readingSource = (p: Reading) => p.source === "camera-rppg" ? "Camera · experimental" : p.source === "oura" ? "Oura Ring" : p.source === "apple-health" ? "Apple Watch · Health" : "Manual reading";
+const measurementTime = (r: RecordItem) => r.payload.measurementDay ? r.payload.measurementDay + " · nightly average" : date(r.payload.measuredAt || r.created);
 const date = (s: string) =>
   new Date(s).toLocaleString(undefined, {
     dateStyle: "medium",
@@ -248,9 +250,17 @@ export default function App() {
       elevenlabs: false,
     }),
     [loading, setLoading] = useState(true),
-    [section, setSection] = useState<Section>("dashboard"),
+    [section, setCurrentSection] = useState<Section>(initialSection),
     [records, setRecords] = useState<RecordItem[]>([]),
     [error, setError] = useState("")
+  const [demoEphemeral,setDemoEphemeral]=useState(false);
+  const [preferences,setPreferences]=useState(readPreferences);
+  const pageRef=useRef<HTMLDivElement>(null);
+  const group=groups.find(g=>g.sections.includes(section))!;
+  function setSection(next:Section){if(next!==section){history.pushState(null,'','#'+next);setCurrentSection(next);}}
+  useEffect(()=>{const back=()=>setCurrentSection(initialSection());window.addEventListener('popstate',back);window.addEventListener('hashchange',back);return()=>{window.removeEventListener('popstate',back);window.removeEventListener('hashchange',back);};},[]);
+  useEffect(()=>{pageRef.current?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});},[section]);
+  useEffect(()=>{try{localStorage.setItem('pulse-display',JSON.stringify(preferences));}catch{/* Browser storage may be disabled. */}},[preferences]);
   async function refresh() {
     const data = await api("/records")
     setRecords(data.records)
@@ -261,6 +271,7 @@ export default function App() {
       const data = await api("/me")
       setUser(data.user)
       setServices(data.services)
+      setDemoEphemeral(data.demoEphemeral===true)
       await refresh()
     } catch (e) {
       if ((e as Error).message !== "Please sign in.")
@@ -293,23 +304,12 @@ export default function App() {
       </>
     )
   return (
-    <div className="app-shell">
+    <div className={`app-shell${preferences.largeText?" large-text":""}${preferences.contrast?" high-contrast":""}${preferences.reduceMotion?" reduce-motion":""}`}><a className="skip-link" href="#main-content" onClick={e=>{e.preventDefault();pageRef.current?.focus();}}>Skip to content</a>
       <aside className="sidebar">
         <Logo />
-        <div className="workspace-label">YOUR WORKSPACE</div>
-        <nav>
-          {nav.map(([id, label, icon]) => (
-            <button
-              key={id}
-              aria-current={section === id ? "page" : undefined}
-              className={section === id ? "active" : ""}
-              onClick={() => setSection(id)}
-            >
-              <span>{icon}</span>
-              {label}
-              {section === id && <i />}
-            </button>
-          ))}
+        <div className="workspace-label">YOUR HEALTH SPACE</div>
+        <nav aria-label="Main navigation">
+          {groups.map(item=><button key={item.id} aria-current={group.id===item.id?'page':undefined} className={group.id===item.id?'active':''} onClick={()=>setSection(item.home)}><span aria-hidden="true">{item.icon}</span>{item.label}{group.id===item.id&&<i/>}</button>)}
         </nav>
         <div className="sidebar-note">
           <span>◇</span>
@@ -344,7 +344,7 @@ export default function App() {
       <main>
         <div className="topbar">
           <span>
-            MY HEALTH <b>/</b> {nav.find((n) => n[0] === section)?.[1]}
+            {group.label}{section!=="dashboard"&&<><b>/</b> {sections[section].label}</>}
           </span>
           <span className="date-today">
             {new Date().toLocaleDateString(undefined, {
@@ -354,8 +354,12 @@ export default function App() {
             })}
           </span>
         </div>
-        <div className="page">
+        <div className="page" id="main-content" ref={pageRef} tabIndex={-1}>
+          {group.sections.length>1&&<nav className="section-navigation" aria-label={`${group.label} options`}>{group.sections.map(id=><button key={id} className={section===id?'selected':''} aria-current={section===id?'page':undefined} onClick={()=>setSection(id)}>{sections[id].label}</button>)}</nav>}
+          {section==='display'&&<ReadingPreferences value={preferences} onChange={setPreferences}/>}
+
           <ErrorMessage message={error} />
+          {demoEphemeral&&<p className="notice demo-notice">Demo workspace: accounts, photos and local records can reset when the free server restarts. Download anything you want to keep.</p>}
           {section === "dashboard" && (
             <Dashboard user={user} records={records} onNav={setSection} />
           )}{" "}
@@ -375,6 +379,12 @@ export default function App() {
               onPrivacy={() => setSection("privacy")}
             />
           )}{" "}
+          {section === "camera" && <CameraCheckIn onSaved={refresh} />}
+          {section === "photos" && <PhotoTracking />}
+          {section === "brief" && <AppointmentBrief records={records} />}
+          {section === "controls" && <AIControls />}
+          {section === "analytics" && <Analytics />}
+          {section === "wearables" && <Wearables onImported={refresh} />}
           {section === "voice" && <Voice user={user} services={services} />}{" "}
           {section === "records" && (
             <Records records={records} refresh={refresh} />
@@ -400,14 +410,15 @@ function Dashboard({
   records: RecordItem[]
   onNav: (s: Section) => void
 }) {
-  const readings = records.filter((r) => r.kind === "vitals")
+  const readings = records.filter((r) => r.kind === "vitals").sort((a,b)=>Date.parse(b.payload.measuredAt || b.created)-Date.parse(a.payload.measuredAt || a.created))
   const latest = readings[0]
+  const latestFor = (key: keyof Reading) => readings.find(r=>r.payload[key]!==undefined)
   const chart = [...readings]
     .reverse()
     .filter((r) => r.payload.hr !== undefined)
     .slice(-30)
     .map((r) => ({
-      time: new Date(r.created).toLocaleDateString(undefined, {
+      time: new Date(r.payload.measuredAt || r.created).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
       }),
@@ -421,37 +432,11 @@ function Dashboard({
       >
         A little awareness. A healthier everyday.
       </Heading>
-      <section className="welcome-card">
-        <div>
-          <span className="eyebrow">ONE PLACE. YOUR WHOLE PICTURE.</span>
-          <h2>
-            Make time to <em>check in.</em>
-          </h2>
-          <p>
-            Add a reading from your device and start seeing your story over
-            time.
-          </p>
-          <button className="primary" onClick={() => onNav("vitals")}>
-            ＋ Add a reading
-          </button>
-        </div>
-        <div className="pulse-art" aria-hidden="true">
-          <div />
-          <svg viewBox="0 0 260 100">
-            <path
-              d="M0 50 H48 L63 32 L77 67 L96 8 L116 92 L135 38 L150 50 H260"
-              fill="none"
-              stroke="#ec4899"
-              strokeWidth="2.5"
-            />
-          </svg>
-          <span>SMALL MOMENTS. MEANINGFUL INSIGHT.</span>
-        </div>
-      </section>
+      <StartHere onNav={onNav} />
       <div className="section-line">
         <h3>Latest readings</h3>
         <span>
-          {latest ? date(latest.created) : "Your journal starts here"}
+          {latest ? date(latest.payload.measuredAt || latest.created) : "Your journal starts here"}
         </span>
       </div>
       <div className="metric-grid">
@@ -459,14 +444,15 @@ function Dashboard({
           <article className={"metric metric-" + i} key={f.key}>
             <span>{f.label}</span>
             <div>
-              <strong>{latest?.payload[f.key] ?? "—"}</strong>
+              <strong>{latestFor(f.key)?.payload[f.key] ?? "—"}</strong>
               <small>{f.unit}</small>
             </div>
             <p>
-              {latest?.payload[f.key] !== undefined
-                ? "Manually recorded"
+              {latestFor(f.key)
+                ? readingSource(latestFor(f.key)!.payload) + (f.key === "hrv" ? " · " + (latestFor(f.key)!.payload.hrvMethod || "method unspecified") : "")
                 : "No reading yet"}
             </p>
+            {latestFor(f.key) && <p>{measurementTime(latestFor(f.key)!)}</p>}
             <svg viewBox="0 0 180 24" aria-hidden="true">
               <path d="M0 20 L25 20 L35 11 L45 20 L68 20 L81 3 L90 23 L102 13 L115 20 H180" />
             </svg>
@@ -532,8 +518,8 @@ function Dashboard({
             Write down your observations. Get educational guidance to help
             prepare for a conversation with your clinician.
           </p>
-          <button className="secondary" onClick={() => onNav("symptom")}>
-            Open Symptom AI ↗
+          <button className="secondary" onClick={() => onNav("brief")}>
+            Prepare appointment brief ↗
           </button>
           <div className="stat-line">
             <strong>{records.length}</strong>
@@ -570,7 +556,7 @@ function Vitals({ onSaved }: { onSaved: () => Promise<void> }) {
   }
   return (
     <>
-      <Heading eyebrow="BUILD YOUR HEALTH STORY" title="Vitals journal">
+      <Heading eyebrow="BUILD YOUR HEALTH STORY" title="Add a reading">
         Record readings from a trusted device, at your own pace.
       </Heading>
       <div className="two-column">
@@ -621,7 +607,7 @@ function Vitals({ onSaved }: { onSaved: () => Promise<void> }) {
             dated and saved to your account.
           </p>
           <div className="notice">
-            Camera-based heart rate, oxygen saturation, and blood pressure
+            Connect Apple Watch or Oura in Wearables to import supported readings. Camera-based heart rate, oxygen saturation, and blood pressure
             measurement are not connected in this version.
           </div>
           <p className="small">
@@ -694,7 +680,7 @@ function Symptoms({
   }
   return (
     <>
-      <Heading eyebrow="OBSERVE. ASK. UNDERSTAND." title="Symptom AI">
+      <Heading eyebrow="OBSERVE. ASK. UNDERSTAND." title="How are you feeling?">
         Educational guidance to help you prepare for a clinician conversation.
       </Heading>
       {(!services.gemini || !user.ai) && (
@@ -970,7 +956,7 @@ function Records({
   }
   return (
     <>
-      <Heading eyebrow="YOUR STORY, OVER TIME" title="Health records">
+      <Heading eyebrow="YOUR STORY, OVER TIME" title="My journal">
         Your readings and AI guidance, saved in one place.
       </Heading>
       <div className="section-line">
@@ -1011,10 +997,11 @@ function Records({
                   <div>
                     <span className="eyebrow">
                       {r.kind === "vitals"
-                        ? "MANUAL READING"
+                        ? readingSource(r.payload).toUpperCase()
                         : "GEMINI GUIDANCE"}
                     </span>
-                    <h3>{date(r.created)}</h3>
+                    <h3>{measurementTime(r)}</h3>
+                    {r.payload.measurement && <p className="small">{r.payload.measurement}{r.payload.hrvMethod ? " · HRV " + r.payload.hrvMethod : ""} · Imported {date(r.created)}</p>}
                   </div>
                   <button
                     className="text-button"
@@ -1112,7 +1099,7 @@ function Privacy({
   }
   return (
     <>
-      <Heading eyebrow="YOU’RE IN CONTROL" title="Privacy center">
+      <Heading eyebrow="YOU’RE IN CONTROL" title="Privacy & sharing">
         Clear choices about where your information goes.
       </Heading>
       <ErrorMessage message={error} />
@@ -1166,7 +1153,7 @@ function Privacy({
           </h2>
           <p>
             Account details, manually entered readings, and AI responses are
-            stored in this app’s server database. Uploaded photos are forwarded
+            stored in this app’s server database. Photos explicitly saved in Photo tracking, their boundaries and AI reviews are also stored until you delete them. Camera frames are discarded after processing; only estimates you choose to save are retained. Optional note dictation uses your browser’s speech service, which may process audio remotely. Symptom AI attachments are forwarded
             for the requested analysis and are not saved by this app.
           </p>
           <p>
