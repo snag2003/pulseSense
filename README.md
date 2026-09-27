@@ -6,6 +6,14 @@ A working full-stack foundation built from your Figma Make export. It keeps the 
 
 Open **Wearables** to connect Oura or pair the included Apple Health iPhone companion. See [WEARABLES.md](WEARABLES.md) for setup, supported readings, and test limitations. Both integrations import recorded measurements on request; they do not provide continuous live monitoring.
 
+## Hosted demo
+
+Live demo: https://pulsesense-ai-szcc.onrender.com
+
+Custom domain: **pulsesenseai.us** is registered in Render and awaits Porkbun DNS verification. This free demo uses temporary storage: accounts, photos, sessions and local records can reset after a restart or idle spin-down.
+
+Navigation: **Home**, **Check in**, **My health**, **Prepare for a visit**, **Settings**. Settings includes larger text, higher contrast and reduced motion.
+
 ## Try it locally
 
 Requires Node.js 22.13+ (tested with 22.20) and npm.
@@ -29,7 +37,7 @@ Copy `.env.example` to `.env` inside this folder. Set the provider keys there, *
 - `GEMINI_API_KEY`: Google AI Studio key. `GEMINI_MODEL` selects the model available to your account; keep the model ID that works with your account.
 - `ELEVENLABS_API_KEY`: ElevenLabs key. `ELEVENLABS_VOICE_ID` chooses a voice available to your account.
 
-In the app, open **Privacy center** and enable only the services you want to use. Then submit an observation in **Symptom AI**, or choose ElevenLabs in **Voice guide**. Enabling a preference alone does not send information. Provider access may incur usage charges under your provider account.
+In the app, open **Settings → Privacy & sharing** and enable only the services you want to use. Then submit an observation in **Check in → How I feel**, or choose ElevenLabs in **Prepare for a visit → Listen & review**. Enabling a preference alone does not send information. Provider access may incur usage charges under your provider account.
 
 A configured-key badge only means an environment variable is present. It does not verify the key, model access, quota, or service availability. Provider failures appear in the app; simulated responses are never substituted.
 
@@ -54,7 +62,7 @@ After changing `.env`, stop the backend with Ctrl+C and run `npm run server` aga
 
 `src/App.tsx` contains the React screens. `src/product.css` styles the product; the export’s global theme remains in `src/index.css`. `server/app.mjs` implements the Express API and SQLite schema. `server/index.mjs` loads environment configuration and starts the server.
 
-The default database is `data/pulsesense.sqlite`; SQLite may also create WAL/SHM files. Data survives restarts. Back up SQLite consistently using SQLite backup tooling. API keys are environment variables and never included in browser assets. The database is **not encrypted by this application**. Symptom AI attachments are not persisted. Photo tracking explicitly saves selected photos, boundaries, notes and AI reviews; these can be deleted in the photo journal. Camera frames are processed transiently. Descriptions, generated guidance, notes, and saved readings are stored. Exports contain your saved record content.
+The default database is `data/pulsesense.sqlite`; SQLite may also create WAL/SHM files. Local data survives laptop restarts; the free Render filesystem is temporary and does not provide that guarantee. Back up SQLite consistently using SQLite backup tooling. API keys are environment variables and never included in browser assets. The database is **not encrypted by this application**. Symptom AI attachments are not persisted. Photo tracking explicitly saves selected photos, boundaries, notes and AI reviews; these can be deleted in the photo journal. Camera frames are processed transiently. Descriptions, generated guidance, notes, and saved readings are stored. Exports contain your saved record content.
 
 The original ZIP remains untouched. Figma-specific helper scripts were not carried into this portable app. The copied pnpm lockfile was removed; `package-lock.json` is the current dependency lock.
 
@@ -67,13 +75,13 @@ npm run build
 
 The integration test exercises registration and login, unauthenticated access, invalid measurements, record ownership, exports, consent denial, missing configuration, invalid image signatures, mocked provider contracts, record deletion, activity logs, session invalidation, and database persistence after reopening.
 
-Actual paid-provider requests have **not** been tested without credentials. Browser sign-in layout was visually inspected. Other screens and mobile layouts are implemented but have not completed end-to-end browser testing.
+On September 27, 2026, the Render deployment passed live checks for registration, saved readings, Gemini guidance, ElevenLabs audio, Tiger snapshot sync and continuous aggregates, and OpenCV image segmentation using synthetic inputs. The camera worker rejected a synthetic no-face scan as expected. Grouped navigation and persisted reading preferences were checked in the browser. These checks do not establish clinical accuracy or an exhaustive accessibility audit.
 
 ## Before a public launch
 
-This is a local working foundation, not a clinically validated or production-certified medical system. Experimental camera rPPG is included; camera blood-pressure/SpO₂ estimation and clinician notifications are not. Readings come from manual entry and wearable imports; AI supplies educational guidance and does not diagnose. Tiger Data integration is implemented but requires your connection and a live verification. No cloud deployment has been performed.
+This is a hosted hackathon prototype, not a clinically validated or production-certified medical system. Experimental camera rPPG is included; camera blood-pressure/SpO₂ estimation and clinician notifications are not. Readings come from manual entry and wearable imports; AI supplies educational guidance and does not diagnose. Tiger Data is connected and verified. The Docker deployment is live on Render’s free plan.
 
-A public service still needs your hosting/provider choices, HTTPS, an exact `APP_ORIGIN`, `NODE_ENV=production` (secure cookies), persistent database storage, backup/recovery, email verification and password recovery, account lifecycle controls, deployment monitoring, and an appropriate privacy/security review for the intended health-data use. The in-process rate limiter and single-server SQLite design are intentionally small-scale. Provider keys must be stored as deployment secrets. Do not claim HIPAA compliance or clinical measurement accuracy from this implementation.
+A production service still needs persistent database storage, backup/recovery, email verification and password recovery, account lifecycle controls, deployment monitoring, and an appropriate privacy/security review for the intended health-data use. The in-process rate limiter and single-server SQLite design are intentionally small-scale. Provider keys must be stored as deployment secrets. Do not claim HIPAA compliance or clinical measurement accuracy from this implementation.
 
 For production behind an HTTPS reverse proxy, serve the built app and API from the same origin, set `APP_ORIGIN` to that exact HTTPS URL, and keep the backend private to the proxy. Choose storage and scaling requirements before moving to multiple instances.
 
@@ -85,8 +93,8 @@ For production behind an HTTPS reverse proxy, serve the built app and API from t
 
 See [SETUP.md](SETUP.md) for Tiger Data and your domain, and [SUBMISSION.md](SUBMISSION.md) for challenge evidence and the demo script. Deployment files are provider-neutral; DigitalOcean is not required or included in the submission targets.
 
-Five integration test suites pass, including brief ownership, preview consent, citation validation, revision conflicts, usage tracking and Tiger request contracts. Providers and PostgreSQL are mocked in these tests; this is not proof of live Tiger Data or paid-provider connectivity. The Apple Health companion still needs an Xcode/device build.
+Six Node integration suites and three Python vision tests pass, including brief ownership, preview consent, citation validation, revision conflicts, usage tracking and Tiger request contracts. Providers and PostgreSQL are mocked in these tests; this is not proof of live Tiger Data or paid-provider connectivity. The Apple Health companion still needs an Xcode/device build.
 
 ## Camera and visual tracking
 
-See [VISION.md](VISION.md) for the Python setup, camera check-in, boundary overlays, optional dictation and validation limits. The dashboard now starts with camera and photo workflows.
+See [VISION.md](VISION.md) for the Python setup, camera check-in, boundary overlays, optional dictation and validation limits. The Home screen starts with common tasks; camera and photo workflows are grouped under Check in.

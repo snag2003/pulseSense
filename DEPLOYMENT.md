@@ -4,6 +4,16 @@ Target domain: **pulsesenseai.us**. GitHub repository: **snag2003/pulseSense**.
 
 The Dockerfile runs the React app, Node API and private Python worker together. `render.yaml` selects a **free** Render web service, not a static site. DigitalOcean is not used. This is a single-instance hackathon demo.
 
+## Current deployment
+
+Live: https://pulsesense-ai-szcc.onrender.com
+
+Render service: `srv-dasbdio473hc73fi6p8g`, Docker, Free, Ohio. Automatic code deployments are off so a commit cannot unexpectedly reset demo records. Deploy manually after reviewing changes. Credentials are configured privately in Render.
+
+`pulsesenseai.us` and `www.pulsesenseai.us` are registered in Render and currently await DNS. In Porkbun, use an A record with a blank Host and answer `216.24.57.1`, plus a CNAME with Host `www` and answer `pulsesense-ai-szcc.onrender.com`. Keep unrelated records. Verify in Render after saving.
+
+Verified live with synthetic data: account creation, saved readings, Gemini guidance, ElevenLabs audio, Tiger sync/continuous aggregate/removal, OpenCV segmentation, and correct rejection of a no-face camera scan. Real-person camera accuracy and the hosted Oura authorization flow remain unverified.
+
 ## Render
 
 Create a Web Service using the public GitHub repository and its `main` branch. Choose Docker and the Free plan. Set the variables from `render.yaml` in Render's Environment page. Keep credentials there, never in GitHub. The database certificate file is public certificate material, not a password.
